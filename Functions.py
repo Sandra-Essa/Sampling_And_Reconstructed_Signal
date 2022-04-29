@@ -2,6 +2,7 @@ import sys
 from PyQt5 import QtGui
 import numpy as np
 import pandas as pd
+
 import pyqtgraph as pg
 from PyQt5 import QtWidgets as qtw
 from PyQt5 import QtCore as qtc
@@ -9,24 +10,21 @@ from PyQt5 import QtGui as qtg
 from numpy.lib.function_base import sinc
 from numpy.lib.shape_base import tile
 from numpy.ma import dot
-from Samplind_And_Recovery import Ui_MainWindow
-import matplotlib.pyplot as plt
+
+from Sampling_And_Recovery import Ui_MainWindow
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QApplication, QWidget, QInputDialog, QFileDialog
-from PyQt5.QtGui import QIcon, QPixmap
 from pathlib import Path
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-from pyqtgraph import PlotWidget, PlotItem
 import pyqtgraph as pg
+
 from PyQt5.QtWidgets import QBoxLayout, QLineEdit, QSpinBox
 from PyQt5.QtWidgets import QLabel
 from PyQt5.QtGui import QDoubleValidator, QValidator
 from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
-from scipy.interpolate import interp1d
 import numpy.fft as fft
 from scipy.interpolate import make_interp_spline
 from numpy import savetxt, newaxis
@@ -49,7 +47,6 @@ class MainWindow(qtw.QMainWindow):
 
         self.channel_sample = 0
         self.channel_recover = 1
-
         self.ui.checkBox.setChecked(True)
         self.ui.channel_sample.show()
         self.ui.channel_recover.show()
@@ -76,7 +73,7 @@ class MainWindow(qtw.QMainWindow):
         self.ui.actionchannel_1.triggered.connect(lambda: self.open_file())
         self.ui.slider.setMinimum(1)
         self.ui.slider.setMaximum(3)
-        
+ 
 
         self.ui.slider.valueChanged.connect(
             lambda: self.getFsample(self.time, self.amplitude))
@@ -90,7 +87,6 @@ class MainWindow(qtw.QMainWindow):
         self.frequency = 0
         self.magnitude = 0
         self.phase = 0
-
 
     def toggle(self, channel_sample: int, ) -> None:
         if (self.channelComponents[channel_sample].isVisible()):
@@ -162,6 +158,7 @@ class MainWindow(qtw.QMainWindow):
         self.ui.graphicsView_sample.clear()
         self.amplitude = self.sum
         self.time = self.time
+       
         self.plot(self.time, self.amplitude)
 
     def open_file(self):
@@ -175,11 +172,12 @@ class MainWindow(qtw.QMainWindow):
             print(filename)
             self.read_file(file_url)
 
-
     def read_file(self, file_path):
         self.ui.graphicsView_sample.clear()
         path = file_path
+
         read_data = pd.read_csv(path)
+
         self.amplitude = read_data.values[:, 1]
         self.AmplitudeList.append(self.amplitude)
         self.time = read_data.values[:, 0]
@@ -187,7 +185,6 @@ class MainWindow(qtw.QMainWindow):
         for i in range(len(self.AmplitudeList)):
             if i <= 6:
                 self.plot(self.TimeList[i], self.AmplitudeList[i])
-
 
     def getFsample(self, time, amplitude):
         self.ui.graphicsView_sample.clear()
@@ -200,34 +197,29 @@ class MainWindow(qtw.QMainWindow):
         peaks1 = freqs[mask]
         peaks = abs(peaks1)
         F_max = max(peaks * 100)
+        # print(F_max)
         self.fmax = int(F_max)
         self.fs = self.ui.slider.value() * self.fmax
         self.time_to_sample = 1/(self.fs)
         self.sampled_time = (time)[::int(100 / self.fs)]
         self.sampling_signal = (amplitude)[::int(100 / (self.fs))]
+     
         self.ui.graphicsView_sample.plot(
             self.sampled_time, self.sampling_signal, pen=None, symbol='o')
-        
 
     def recover_upper_graph(self, timesampled, datasampled, originaltime, TS):
-        self.ui.graphicsView_recover.clear()
-        y_interpolated = 0
-        for index in range(0, len(timesampled)):
-            y_interpolated += datasampled[index] * \
-                np.sinc((np.array(originaltime)-TS*index)/TS)
+        self.x_axis_new = np.linspace(min(timesampled), max(timesampled), 1000)
+        self.spline = make_interp_spline(timesampled, datasampled, 3)
+        self.y_axis_new = self.spline(self.x_axis_new)
         self.ui.graphicsView_recover.plot(
-            originaltime, y_interpolated, pen=self.pen4)
-
-        
+            self.x_axis_new, self.y_axis_new, pen=self.pen4)
 
     def recover_down_graph(self, timesampled, datasampled, originaltime, TS):
-        y_interpolated = 0
-        for index in range(0, len(timesampled)):
-            y_interpolated += datasampled[index] * \
-                np.sinc((np.array(originaltime)-TS*index)/TS)
+        self.x_axis_new = np.linspace(min(timesampled), max(timesampled), 1000)
+        self.spline = make_interp_spline(timesampled, datasampled, 3)
+        self.y_axis_new = self.spline(self.x_axis_new)
         self.ui.graphicsView_sample.plot(
-            originaltime, y_interpolated, pen=self.pen4)
-      
+            self.x_axis_new, self.y_axis_new, pen=self.pen3)
 
     def plot(self, x, y):
         self.ui.graphicsView_sample.plot(x, y, pen=self.pen4)
