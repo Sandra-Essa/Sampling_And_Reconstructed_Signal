@@ -13,7 +13,7 @@ Tab 1:-
 
 - Open Signal in CSV formate .
 - Plotting signal with sampling rate from (0-3)fmax.
-- Reconstruction sampling signals.
+- Reconstruction sampling signals in upper Graph and Lower Graph.
 - Toggle between two graphs.
 ---
 Tab 2:-
